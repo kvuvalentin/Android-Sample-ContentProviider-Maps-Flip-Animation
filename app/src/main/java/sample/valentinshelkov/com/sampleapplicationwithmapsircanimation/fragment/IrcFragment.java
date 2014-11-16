@@ -36,6 +36,7 @@ public class IrcFragment extends ListFragment {
 
 
     private static final String TAG = IrcFragment.class.getSimpleName();
+    public static final int RANDOM_MESSAGES_SENDING_INTERVAL_SECONDS = 10;
 
     private AbsListView listView;
     private IrcAdapter adapter;
@@ -65,7 +66,7 @@ public class IrcFragment extends ListFragment {
     @Override
     public void onAttach(Activity activity) {
         super.onAttach(activity);
-        sendRandomMessageFuture = Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new SendRandomMessage(activity, this), 0, 3, TimeUnit.SECONDS);
+        sendRandomMessageFuture = Executors.newScheduledThreadPool(1).scheduleAtFixedRate(new SendRandomMessage(activity, this), 0, RANDOM_MESSAGES_SENDING_INTERVAL_SECONDS, TimeUnit.SECONDS);
     }
 
     @Override

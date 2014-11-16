@@ -1,8 +1,6 @@
 package sample.valentinshelkov.com.sampleapplicationwithmapsircanimation.fragment;
 
 
-import android.animation.Animator;
-import android.animation.AnimatorInflater;
 import android.content.ClipData;
 import android.content.ClipDescription;
 import android.content.Context;
@@ -13,6 +11,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.LevelListDrawable;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.DragEvent;
@@ -23,6 +22,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import com.valentinshelkov.sampleapplicationwithmapsircanimation.R;
@@ -33,6 +33,9 @@ public class AnimationFragment extends Fragment {
     private static final String IMAGE_TAG = "animatedImageView";
     private View rootView;
     private ImageView animatedImageView;
+    private Animation animationIn, animationOut;
+    private FrameLayout container;
+    private final Handler handler = new Handler();
 
     public AnimationFragment() {
         // Required empty public constructor
@@ -44,28 +47,29 @@ public class AnimationFragment extends Fragment {
     }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater, ViewGroup root,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
+        animationIn = AnimationUtils.loadAnimation(inflater.getContext(), R.anim.rot_in);
+        animationOut = AnimationUtils.loadAnimation(inflater.getContext(), R.anim.rot_out);
         rootView = inflater.inflate(R.layout.fragment_animation, container, false);
+        this.container = (FrameLayout) rootView.findViewById(R.id.container);
         rootView.setOnDragListener(new View.OnDragListener() {
             @Override
             public boolean onDrag(View view, DragEvent event) {
                 switch (event.getAction()) {
                     case DragEvent.ACTION_DROP:
-                        View v = animatedImageView;
-//                        if (v == null) return false;
-                        float X = event.getX() - v.getWidth();
-                        float Y = event.getY() - v.getHeight();
+                        float X = event.getX() - container.getWidth();
+                        float Y = event.getY() - container.getHeight();
                         Log.w("X, Y", X + ", " + Y);
-                        v.setX(X);
-                        v.setY(Y);
-                        v.setLeft((int) X);
-                        v.setTop((int) Y);
-                        v.setRight((int) Y + v.getWidth());
-                        v.setBottom((int) X + v.getHeight());
+                        container.setX(X);
+                        container.setY(Y);
+                        container.setLeft((int) X);
+                        container.setTop((int) Y);
+                        container.setRight((int) Y + container.getWidth());
+                        container.setBottom((int) X + container.getHeight());
                         // Invalidates the view to force a redraw
-                        v.invalidate();
+                        container.invalidate();
                         break;
                 }
                 return true;
@@ -73,18 +77,18 @@ public class AnimationFragment extends Fragment {
         });
         animatedImageView = (ImageView) rootView.findViewById(R.id.animatedImageView);
         animatedImageView.setTag(IMAGE_TAG);
-        animatedImageView.setOnTouchListener(new View.OnTouchListener() {
+        container.setOnTouchListener(new View.OnTouchListener() {
             private GestureDetector detector;
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 if (detector == null) {
-                    detector = new InnerGestureDetector(v.getContext());
+                    detector = new InnerGestureDetector(v.getContext(), AnimationFragment.this);
                 }
                 return detector.onTouchEvent(event);
             }
         });
-        animatedImageView.setOnLongClickListener(new View.OnLongClickListener() {
+        container.setOnLongClickListener(new View.OnLongClickListener() {
 
             // Defines the one method for the interface, which is called when the View is long-clicked
             public boolean onLongClick(View v) {
@@ -100,7 +104,7 @@ public class AnimationFragment extends Fragment {
                 return true;
             }
         });
-        animatedImageView.setOnDragListener(new View.OnDragListener() {
+        container.setOnDragListener(new View.OnDragListener() {
 
             @Override
             public boolean onDrag(final View v, DragEvent event) {
@@ -112,28 +116,28 @@ public class AnimationFragment extends Fragment {
 
                     case DragEvent.ACTION_DRAG_STARTED:
                         if (event.getClipDescription().hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)) {
-                            ((ImageView) v).setColorFilter(Color.TRANSPARENT);
-                            ((ImageView) v).setImageDrawable(transparent);
-                            v.invalidate();
+                            animatedImageView.setColorFilter(Color.TRANSPARENT);
+                            animatedImageView.setImageDrawable(transparent);
+                            animatedImageView.invalidate();
                             return true;
                         }
                     case DragEvent.ACTION_DRAG_ENTERED:
-                        ((ImageView) v).setColorFilter(Color.TRANSPARENT);
-                        ((ImageView) v).setImageDrawable(transparent);
+                        animatedImageView.setColorFilter(Color.TRANSPARENT);
+                        animatedImageView.setImageDrawable(transparent);
                         v.invalidate();
                         return true;
                     case DragEvent.ACTION_DRAG_LOCATION:
                         // Ignored
                         return true;
                     case DragEvent.ACTION_DRAG_EXITED:
-                        ((ImageView) v).setColorFilter(Color.TRANSPARENT);
-                        ((ImageView) v).setImageDrawable(transparent);
-                        v.invalidate();
+                        animatedImageView.setColorFilter(Color.TRANSPARENT);
+                        animatedImageView.setImageDrawable(transparent);
+                        animatedImageView.invalidate();
                         return true;
                     case DragEvent.ACTION_DRAG_ENDED:
-                        ((ImageView) v).clearColorFilter();
-                        ((ImageView) v).setImageDrawable(imageDrawable);
-                        v.invalidate();
+                        animatedImageView.clearColorFilter();
+                        animatedImageView.setImageDrawable(imageDrawable);
+                        animatedImageView.invalidate();
                         return true;
                     default:
                         Log.e("DragDrop Example", "Unknown action type received by OnDragListener.");
@@ -171,15 +175,55 @@ public class AnimationFragment extends Fragment {
         }
     }
 
-    private class InnerGestureDetector extends GestureDetector {
+    private static class InnerGestureDetector extends GestureDetector {
 
-        public InnerGestureDetector(final Context context) {
+        private static final String TAG = InnerGestureDetector.class.getSimpleName();
+
+        public InnerGestureDetector(final Context context, final AnimationFragment fragment) {
             super(context, new SimpleOnGestureListener() {
+                final Animation.AnimationListener listener = new Animation.AnimationListener() {
+                    private volatile float scale = 1f;
+                    @Override
+                    public void onAnimationStart(Animation animation) {
+                        if(animation.equals(fragment.animationOut)){
+                            scale *= -1f;
+                            Log.w(TAG, "SCALE " + scale);
+                            fragment.animatedImageView.setScaleX(scale);
+                        }
+                    }
+
+                    @Override
+                    public void onAnimationEnd(Animation animation) {
+
+                    }
+
+                    @Override
+                    public void onAnimationRepeat(Animation animation) {
+
+                    }
+                };
+
                 @Override
                 public boolean onSingleTapUp(MotionEvent e) {
                     Log.w("InnerGestureDetector", String.valueOf(e.getDownTime()));
-                    Animation animation = AnimationUtils.loadAnimation(context, R.anim.card_flip_left_in);
-                    animatedImageView.startAnimation(animation);
+                    fragment.animationIn.setAnimationListener(listener);
+                    fragment.animationOut.setAnimationListener(listener);
+                    fragment.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            fragment.animatedImageView.clearAnimation();
+                            fragment.animationIn.reset();
+                            fragment.animatedImageView.startAnimation(fragment.animationIn);
+                        }
+                    });
+                    fragment.handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            fragment.animatedImageView.clearAnimation();
+                            fragment.animationOut.reset();
+                            fragment.animatedImageView.startAnimation(fragment.animationOut);
+                        }
+                    });
                     return true;
                 }
             });
